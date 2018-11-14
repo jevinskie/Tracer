@@ -27,6 +27,7 @@
 #include <QLinkedList>
 #include <sqlite3.h>
 #include <string.h>
+#include <map>
 
 enum EVENT_TYPE
 {
@@ -47,6 +48,21 @@ struct Event
 
 Q_DECLARE_METATYPE(Event)
 
+struct Symbol {
+    uint64_t addr;
+    std::string name;
+    std::string path;
+    uint64_t value;
+    uint64_t size;
+    uint64_t offset;
+};
+
+Q_DECLARE_METATYPE(Symbol);
+
+typedef std::map<uint64_t, Symbol> Symbols;
+
+Q_DECLARE_METATYPE(Symbols);
+
 class SqliteClient : public QObject
 {
     Q_OBJECT
@@ -61,6 +77,7 @@ signals:
     void invalidDatabase();
     void metadataResults(char **metadata);
     void statResults(long long *stats);
+    void symResults(Symbols syms);
     // This HAS to be emited in a time sequential way, or else the event list in the memory blocks won't be sorted.
     void receivedEvent(Event ev);
     void receivedEventDescription(const QString &description);
@@ -70,6 +87,7 @@ public slots:
     void connectToDatabase(QString filename);
     void queryMetadata();
     void queryStats();
+    void querySymbols();
     void queryEvents();
     void queryEventDescription(Event ev);
     void cleanup();

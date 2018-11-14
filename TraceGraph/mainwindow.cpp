@@ -23,6 +23,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <stdint.h>
+#include <iostream>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -38,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent) :
     //Querying event description is a three party interconnection
     connect(ui->graph, &TMGraphView::eventDescriptionQueried, &sqlite_client, &SqliteClient::queryEventDescription);
     connect(&sqlite_client, &SqliteClient::receivedEventDescription, ui->event_display, &QTextEdit::setText);
+    connect(&sqlite_client, &SqliteClient::symResults, this, &MainWindow::onSymResults);
     ui->graph->setSqliteClient(&sqlite_client);
 }
 
@@ -75,6 +79,25 @@ void MainWindow::onInvalidDatabase()
     error.exec();
 }
 
+void MainWindow::onSymResults(Symbols _syms)
+{
+    syms = _syms;
+    std::cerr << "got syms\n";
+    for (const auto &sym : syms) {
+        std::cerr << "addr: " << sym.first << " name: " << sym.second.name << "\n";
+    }
+}
+
+const Symbol* MainWindow::findSym(uint64_t addr) {
+    const auto it = syms.find(addr);
+    if (it != syms.end()) {
+        return &it->second;
+    } else {
+        const auto it2 = syms.lower_bound(addr);
+        return &std::prev(it2)->second;
+    }
+}
+
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
@@ -93,10 +116,17 @@ void MainWindow::positionChanged(unsigned long long address, unsigned long long 
 
 void MainWindow::cursorPositionChanged(unsigned long long address, unsigned long long time)
 {
-    char buffer[64];
-    snprintf(buffer, 64, "Address: 0x%016llx", address);
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "Address: 0x%016llx", address);
     ui->cursor_address->setText(buffer);
-    snprintf(buffer, 64, "Time: %llu", time);
+    const Symbol* cur_sym = findSym(address);
+    if (cur_sym) {
+        snprintf(buffer, sizeof(buffer), "Sym: %s + 0x%llx", cur_sym->name.c_str(), address - cur_sym->addr);
+    } else {
+        strcpy(buffer, "Sym: unknown");
+    }
+    ui->cursor_sym->setText(buffer);
+    snprintf(buffer, sizeof(buffer), "Time: %llu", time);
     ui->cursor_time->setText(buffer);
 }
 

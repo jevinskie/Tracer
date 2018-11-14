@@ -26,6 +26,7 @@
 int main(int argc, char *argv[])
 {
     qRegisterMetaType<Event>("Event");
+    qRegisterMetaType<Symbols>("Symbols");
     QApplication a(argc, argv);
     MainWindow w;
     if(argc > 1) {

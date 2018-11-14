@@ -65,11 +65,15 @@ private slots:
 
     void on_actionOpenDatabase_triggered();
 
+    void onSymResults(Symbols syms);
+    const Symbol* findSym(uint64_t addr);
+
 private:
     Ui::MainWindow *ui;
     QThread worker_thread;
     SqliteClient sqlite_client;
     TMGraphView *scene;
+    Symbols syms;
 };
 
 #endif // MAINWINDOW_H

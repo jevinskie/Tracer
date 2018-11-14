@@ -22,6 +22,9 @@
 /* ===================================================================== */
 #include "sqliteclient.h"
 
+#include <sstream>
+#include <iostream>
+
 SqliteClient::SqliteClient(QObject *parent) :
     QObject(parent)
 {
@@ -165,6 +168,40 @@ void SqliteClient::queryStats()
     stats[2] = sqlite3_column_int64(count_query, 0);
     sqlite3_finalize(count_query);
     emit statResults(stats);
+}
+
+void SqliteClient::querySymbols()
+{
+    sqlite3_stmt *sym_query;
+    int num_unk = 0;
+    Symbols syms;
+
+    sqlite3_prepare_v2(db, "SELECT path, name, value, size, base FROM sym;", -1, &sym_query, NULL);
+
+    while(sqlite3_step(sym_query) == SQLITE_ROW)
+    {
+        Symbol sym;
+        sym.path = (const char*)sqlite3_column_text(sym_query, 0);
+        sym.name = (const char*)sqlite3_column_text(sym_query, 1);
+        if (sym.name.empty()) {
+            std::stringstream value;
+            value.str("");
+            value.clear();
+            value << "unk_" << num_unk;
+            sym.name =  value.str();
+            ++num_unk;
+        }
+        sym.value = strtoul((const char *)sqlite3_column_text(sym_query, 2), NULL, 16);
+        sym.size = strtoul((const char *)sqlite3_column_text(sym_query, 3), NULL, 16);
+        sym.offset = strtoul((const char *)sqlite3_column_text(sym_query, 4), NULL, 16);
+        sym.addr = sym.value + sym.offset;
+        std::cerr << "name: " << sym.name << " addr: " << sym.addr << " value: " << sym.value << " size: " << sym.size << " offset: " << sym.offset << "\n";
+        syms.insert(std::make_pair(sym.addr, sym));
+    }
+
+    std::cerr << "syms size: " << syms.size() << "\n";
+    sqlite3_finalize(sym_query);
+    emit symResults(syms);
 }
 
 void SqliteClient::queryEvents()

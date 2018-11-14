@@ -86,7 +86,7 @@ static const char *SETUP_QUERY =
 "CREATE TABLE IF NOT EXISTS ins (bbl_id INTEGER, ip TEXT, dis TEXT, op TEXT);\n"
 "CREATE TABLE IF NOT EXISTS mem (ins_id INTEGER, ip TEXT, type TEXT, addr TEXT, addr_end TEXT, size INTEGER, data TEXT, value TEXT);\n"
 "CREATE TABLE IF NOT EXISTS thread (thread_id INTEGER, start_bbl_id INTEGER, exit_bbl_id INTEGER);\n"
-"CREATE TABLE IF NOT EXISTS sym (path STRING, name STRING, value INTEGER, size INTEGER);\n"
+"CREATE TABLE IF NOT EXISTS sym (path STRING, name STRING, value INTEGER, size INTEGER, base INTEGER);\n"
 ;
 
 LogTypeType LogType=SQLITE;
@@ -496,6 +496,7 @@ void ImageLoad_cb(IMG Img, void *v)
     std::string imageName = IMG_Name(Img);
     ADDRINT lowAddress = IMG_LowAddress(Img);
     ADDRINT highAddress = IMG_HighAddress(Img);
+    ADDRINT offset = IMG_LoadOffset(Img);
     bool filtered = false;
     PIN_GetLock(&lock, 0);
     if (LogType == SQLITE) {
@@ -514,6 +515,11 @@ void ImageLoad_cb(IMG Img, void *v)
             value << hex << "0x" << setfill('0') << setw(16) << sym.size();
             strvalue = value.str();
             sqlite3_bind_text(sym_insert, 4, strvalue.c_str(), -1, SQLITE_TRANSIENT);
+            value.str("");
+            value.clear();
+            value << hex << "0x" << setfill('0') << setw(16) << offset;
+            strvalue = value.str();
+            sqlite3_bind_text(sym_insert, 5, strvalue.c_str(), -1, SQLITE_TRANSIENT);
             if(sqlite3_step(sym_insert) != SQLITE_DONE)
                 printf("SYM error: %s\n", sqlite3_errmsg(db));
         }
@@ -986,7 +992,7 @@ int  main(int argc, char *argv[])
             sqlite3_prepare_v2(db, "INSERT INTO mem (ins_id, ip, type, addr, addr_end, size, data, value) VALUES (?, ?, ?, ?, ?, ?, ?, ?);", -1, &mem_insert, NULL);
             sqlite3_prepare_v2(db, "INSERT INTO thread (thread_id, start_bbl_id) VALUES (?, ?);", -1, &thread_insert, NULL);
             sqlite3_prepare_v2(db, "UPDATE thread SET exit_bbl_id=? WHERE thread_id=?;", -1, &thread_update, NULL);
-            sqlite3_prepare_v2(db, "INSERT INTO sym (path, name, value, size) VALUES (?, ?, ?, ?);", -1, &sym_insert, NULL);
+            sqlite3_prepare_v2(db, "INSERT INTO sym (path, name, value, size, base) VALUES (?, ?, ?, ?, ?);", -1, &sym_insert, NULL);
 
 
             sqlite3_exec(db, "BEGIN;", NULL, NULL, NULL);

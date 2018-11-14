@@ -89,6 +89,7 @@ void TMGraphView::setSqliteClient(SqliteClient *sqlite_client)
 
 void TMGraphView::onConnectedToDatabase()
 {
+    QMetaObject::invokeMethod(sqlite_client, "querySymbols", Qt::QueuedConnection);
     for(QList<MemoryBlock>::iterator block_it = blocks.begin(); block_it != blocks.end(); block_it++)
         block_it->events.clear();
     blocks.clear();
