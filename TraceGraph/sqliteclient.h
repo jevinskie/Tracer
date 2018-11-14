@@ -55,6 +55,7 @@ struct Symbol {
     uint64_t value;
     uint64_t size;
     uint64_t offset;
+    bool global;
 };
 
 Q_DECLARE_METATYPE(Symbol);

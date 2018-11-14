@@ -176,7 +176,7 @@ void SqliteClient::querySymbols()
     int num_unk = 0;
     Symbols syms;
 
-    sqlite3_prepare_v2(db, "SELECT path, name, value, size, base FROM sym;", -1, &sym_query, NULL);
+    sqlite3_prepare_v2(db, "SELECT path, name, value, size, base, global FROM sym;", -1, &sym_query, NULL);
 
     while(sqlite3_step(sym_query) == SQLITE_ROW)
     {
@@ -194,9 +194,12 @@ void SqliteClient::querySymbols()
         sym.value = strtoul((const char *)sqlite3_column_text(sym_query, 2), NULL, 16);
         sym.size = strtoul((const char *)sqlite3_column_text(sym_query, 3), NULL, 16);
         sym.offset = strtoul((const char *)sqlite3_column_text(sym_query, 4), NULL, 16);
+        sym.global = strtoul((const char *)sqlite3_column_text(sym_query, 5), NULL, 16) == 1;
         sym.addr = sym.value + sym.offset;
-        std::cerr << "name: " << sym.name << " addr: " << sym.addr << " value: " << sym.value << " size: " << sym.size << " offset: " << sym.offset << "\n";
-        syms.insert(std::make_pair(sym.addr, sym));
+        std::cerr << "name: " << sym.name << " addr: " << sym.addr << " value: " << sym.value << " size: " << sym.size << " offset: " << sym.offset << " global: " << sym.global << "\n";
+        if (sym.global) {
+            syms.insert(std::make_pair(sym.addr, sym));
+        }
     }
 
     std::cerr << "syms size: " << syms.size() << "\n";
