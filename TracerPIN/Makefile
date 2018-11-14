@@ -5,12 +5,22 @@ include version.mk
 ifneq ("$(PIN_ROOT)", "")
     CONFIG_ROOT := $(PIN_ROOT)/source/tools/Config
     include $(CONFIG_ROOT)/makefile.config
-    include $(TOOLS_ROOT)/Config/makefile.default.rules
+    include $(CONFIG_ROOT)/makefile.default.rules
+    # include makefile.rules
 endif
 
-TOOL_CXXFLAGS+=-DGIT_DESC=\"$(GIT_DESC)\"
+ifeq ($(TARGET),ia32)
+	TOOL_CXXFLAGS+=-I$(LIEF32_ROOT)/include
+	TOOL_LDFLAGS+=-L$(LIEF32_ROOT)/lib
+else
+	TOOL_CXXFLAGS+=-I$(LIEF64_ROOT)/include
+	TOOL_LDFLAGS+=-L$(LIEF64_ROOT)/lib
+endif
 
-TOOL_LIBS+=-lsqlite3
+TOOL_CXXFLAGS+=-DGIT_DESC=\"$(GIT_DESC)\" -Wno-error -std=gnu++11
+
+TOOL_LIBS+=-lsqlite3 -lLIEF
+# TOOL_LIBS+=$(PWD)/sqlite3.o
 
 PREFIX=/usr/local
 

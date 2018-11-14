@@ -28,10 +28,15 @@
 #include <map>
 #include <sqlite3.h>
 #include <sys/time.h>
+
+#include <LIEF/LIEF.hpp>
+using namespace LIEF;
+
 #ifndef GIT_DESC
 #define GIT_DESC "(unknown version)"
 #endif //GIT_DESC
 using namespace std;
+
 /* ===================================================================== */
 /* Global Variables */
 /* ===================================================================== */
@@ -70,7 +75,7 @@ InfoTypeType InfoType=T;
 std::string TraceName;
 sqlite3 *db;
 sqlite3_int64 bbl_id = 0, ins_id = 0;
-sqlite3_stmt *info_insert, *bbl_insert, *call_insert, *lib_insert, *ins_insert, *mem_insert, *thread_insert, *thread_update;
+sqlite3_stmt *info_insert, *bbl_insert, *call_insert, *lib_insert, *ins_insert, *mem_insert, *thread_insert, *thread_update, *sym_insert;
 
 enum LogTypeType { HUMAN, SQLITE };
 static const char *SETUP_QUERY = 
@@ -80,9 +85,11 @@ static const char *SETUP_QUERY =
 "CREATE TABLE IF NOT EXISTS call (ins_id INTEGER, addr TEXT, name TEXT);\n"
 "CREATE TABLE IF NOT EXISTS ins (bbl_id INTEGER, ip TEXT, dis TEXT, op TEXT);\n"
 "CREATE TABLE IF NOT EXISTS mem (ins_id INTEGER, ip TEXT, type TEXT, addr TEXT, addr_end TEXT, size INTEGER, data TEXT, value TEXT);\n"
-"CREATE TABLE IF NOT EXISTS thread (thread_id INTEGER, start_bbl_id INTEGER, exit_bbl_id INTEGER);\n";
+"CREATE TABLE IF NOT EXISTS thread (thread_id INTEGER, start_bbl_id INTEGER, exit_bbl_id INTEGER);\n"
+"CREATE TABLE IF NOT EXISTS sym (path STRING, name STRING, value INTEGER, size INTEGER);\n"
+;
 
-LogTypeType LogType=HUMAN;
+LogTypeType LogType=SQLITE;
 
 /* ===================================================================== */
 /* Commandline Switches */
@@ -491,6 +498,26 @@ void ImageLoad_cb(IMG Img, void *v)
     ADDRINT highAddress = IMG_HighAddress(Img);
     bool filtered = false;
     PIN_GetLock(&lock, 0);
+    if (LogType == SQLITE) {
+        std::unique_ptr<const Binary> binary{Parser::parse(imageName)};
+        for (const auto &sym : binary->symbols()) {
+            sqlite3_reset(sym_insert);
+            sqlite3_bind_text(sym_insert, 1, imageName.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(sym_insert, 2, sym.name().c_str(), -1, SQLITE_TRANSIENT);
+            value.str("");
+            value.clear();
+            value << hex << "0x" << setfill('0') << setw(16) << sym.value();
+            strvalue = value.str();
+            sqlite3_bind_text(sym_insert, 3, strvalue.c_str(), -1, SQLITE_TRANSIENT);
+            value.str("");
+            value.clear();
+            value << hex << "0x" << setfill('0') << setw(16) << sym.size();
+            strvalue = value.str();
+            sqlite3_bind_text(sym_insert, 4, strvalue.c_str(), -1, SQLITE_TRANSIENT);
+            if(sqlite3_step(sym_insert) != SQLITE_DONE)
+                printf("SYM error: %s\n", sqlite3_errmsg(db));
+        }
+    }
     if(IMG_IsMainExecutable(Img))
     {
         switch (LogType) {
@@ -818,6 +845,7 @@ VOID Fini(INT32 code, VOID *v)
             sqlite3_finalize(call_insert);
             sqlite3_finalize(thread_insert);
             sqlite3_finalize(thread_update);
+            sqlite3_finalize(sym_insert);
             if(sqlite3_close(db) != SQLITE_OK)
             {
                 cerr << "Failed to close db (wut?): " << sqlite3_errmsg(db) << endl;
@@ -958,6 +986,8 @@ int  main(int argc, char *argv[])
             sqlite3_prepare_v2(db, "INSERT INTO mem (ins_id, ip, type, addr, addr_end, size, data, value) VALUES (?, ?, ?, ?, ?, ?, ?, ?);", -1, &mem_insert, NULL);
             sqlite3_prepare_v2(db, "INSERT INTO thread (thread_id, start_bbl_id) VALUES (?, ?);", -1, &thread_insert, NULL);
             sqlite3_prepare_v2(db, "UPDATE thread SET exit_bbl_id=? WHERE thread_id=?;", -1, &thread_update, NULL);
+            sqlite3_prepare_v2(db, "INSERT INTO sym (path, name, value, size) VALUES (?, ?, ?, ?);", -1, &sym_insert, NULL);
+
 
             sqlite3_exec(db, "BEGIN;", NULL, NULL, NULL);
 
