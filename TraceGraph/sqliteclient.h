@@ -95,6 +95,9 @@ public slots:
 
 private:
     sqlite3 *db;
+    Symbols syms;
 };
+
+const Symbol* findSym(Symbols &syms, uint64_t addr);
 
 #endif // SQLITECLIENT_H

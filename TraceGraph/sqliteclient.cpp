@@ -174,7 +174,6 @@ void SqliteClient::querySymbols()
 {
     sqlite3_stmt *sym_query;
     int num_unk = 0;
-    Symbols syms;
 
     sqlite3_prepare_v2(db, "SELECT path, name, value, size, base, global FROM sym;", -1, &sym_query, NULL);
 
@@ -277,10 +276,25 @@ void SqliteClient::queryEventDescription(Event ev)
         int column_count = sqlite3_column_count(query);
         for(i = 0; i < column_count; i++)
         {
-            description.append(sqlite3_column_name(query, i));
+            std::string name(sqlite3_column_name(query, i));
+            description.append(name.c_str());
             description.append(": ");
             description.append((const char*)sqlite3_column_text(query, i));
             description.append("\n");
+            if (name == "ip" || name == "addr" || name == "addr_end") {
+                uint64_t addr = strtoul((const char*)sqlite3_column_text(query, i), NULL, 16);
+                auto sym = ::findSym(syms, addr);
+                description.append(name.c_str());
+                description.append(": ");
+                if (sym) {
+                    char buffer[256];
+                    snprintf(buffer, sizeof(buffer), "%s + 0x%lx", sym->name.c_str(), addr - sym->addr);
+                    description.append(buffer);
+                } else {
+                    description.append("unknown");
+                }
+                description.append("\n");
+            }
         }
     }
     else
@@ -297,5 +311,15 @@ void SqliteClient::cleanup()
     {
         sqlite3_close(db);
         db = NULL;
+    }
+}
+
+const Symbol* findSym(Symbols &syms, uint64_t addr) {
+    const auto it = syms.find(addr);
+    if (it != syms.end()) {
+        return &it->second;
+    } else {
+        const auto it2 = syms.lower_bound(addr);
+        return &std::prev(it2)->second;
     }
 }

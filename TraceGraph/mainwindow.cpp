@@ -22,6 +22,7 @@
 /* ===================================================================== */
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "sqliteclient.h"
 
 #include <stdint.h>
 #include <iostream>
@@ -88,16 +89,6 @@ void MainWindow::onSymResults(Symbols _syms)
     }
 }
 
-const Symbol* MainWindow::findSym(uint64_t addr) {
-    const auto it = syms.find(addr);
-    if (it != syms.end()) {
-        return &it->second;
-    } else {
-        const auto it2 = syms.lower_bound(addr);
-        return &std::prev(it2)->second;
-    }
-}
-
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
@@ -119,7 +110,7 @@ void MainWindow::cursorPositionChanged(unsigned long long address, unsigned long
     char buffer[256];
     snprintf(buffer, sizeof(buffer), "Address: 0x%016llx", address);
     ui->cursor_address->setText(buffer);
-    const Symbol* cur_sym = findSym(address);
+    const Symbol* cur_sym = ::findSym(syms, address);
     if (cur_sym) {
         snprintf(buffer, sizeof(buffer), "Sym: %s + 0x%llx", cur_sym->name.c_str(), address - cur_sym->addr);
     } else {
