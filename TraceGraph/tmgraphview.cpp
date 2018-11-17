@@ -378,18 +378,7 @@ void TMGraphView::keyPressEvent(QKeyEvent * event)
 void TMGraphView::mouseMoveEvent(QMouseEvent * event)
 {
     if (event->modifiers().testFlag(Qt::ControlModifier) && event->buttons() == Qt::LeftButton) {
-        // std::cout << "ctrl click move\n";
-        // std::cout << "rubberband event before rect: " << rubberBand->rect() << "\n";
-        // auto origin = event->pos();
-        // auto rbRect = QRect(rubberBand->geometry().topLeft(), event->pos());
-        // std::cout << "rubberband event after rect: " << rbRect << "\n";
-        // rbRect = rbRect.normalized();
-        // std::cout << "rubberband event after rect norm: " << rbRect << "\n";
         rubberBand->setGeometry(QRect(rubberBand->geometry().topLeft(), event->pos()).normalized());
-        // std::cout << "rubberband event event pos: " << event->pos() << "\n";
-        // std::cout << "rubberband event rect: " << rubberBand->geometry() << "\n";
-        // update();
-        // return;
     }
     else if(event->buttons() & Qt::LeftButton)
     {
@@ -406,18 +395,8 @@ void TMGraphView::mouseMoveEvent(QMouseEvent * event)
 void TMGraphView::mousePressEvent(QMouseEvent * event)
 {
     if (event->modifiers().testFlag(Qt::ControlModifier) && event->button() == Qt::LeftButton) {
-        std::cout << "ctrl click press\n";
-        auto origin = event->pos();
-        std::cout << "rubberband press origin point: " << origin << "\n";
-        std::cout << "rubberband press before rect: " << rubberBand->rect() << "\n";
-        auto rbRect = QRect(event->pos(), QSize());
-        std::cout << "rubberband press new rect: " << rbRect << "\n";
         rubberBand->setGeometry(QRect(event->pos(), QSize()));
         rubberBand->show();
-        std::cout << "rubberband press event pos: " << event->pos() << "\n";
-        std::cout << "rubberband press rect: " << rubberBand->geometry() << "\n";
-        update();
-        return;
     }
     if(event->button() == Qt::LeftButton)
     {
@@ -440,13 +419,9 @@ void TMGraphView::mousePressEvent(QMouseEvent * event)
 void TMGraphView::mouseReleaseEvent(QMouseEvent * event)
 {
     if (event->modifiers().testFlag(Qt::ControlModifier) && event->button() == Qt::LeftButton) {
-        std::cout << "ctrl click release\n";
-        std::cout << "rubberband release event pos: " << event->pos() << "\n";
-        std::cout << "rubberband release rect: " << rubberBand->rect() << "\n";
         rubberBand->hide();
-        update();
     }
-    if(event->button() == Qt::LeftButton)
+    else if(event->button() == Qt::LeftButton)
     {
         // User is trying to select an event
         if(abs(drag_start.x() - event->pos().x()) < 10 || abs(drag_start.y() - event->pos().y()) < 10)
