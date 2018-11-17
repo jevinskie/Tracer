@@ -42,6 +42,7 @@ MainWindow::MainWindow(QWidget *parent) :
     //Querying event description is a three party interconnection
     connect(ui->graph, &TMGraphView::eventDescriptionQueried, &sqlite_client, &SqliteClient::queryEventDescription);
     connect(&sqlite_client, &SqliteClient::receivedEventDescription, ui->event_display, &QTextEdit::setText);
+    connect(ui->graph, &TMGraphView::receivedEventRange, ui->event_display, &QTextEdit::setText);
     connect(&sqlite_client, &SqliteClient::symResults, this, &MainWindow::onSymResults);
     ui->graph->setSqliteClient(&sqlite_client);
 }

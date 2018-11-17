@@ -24,6 +24,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <fmt/format.h>
 
 SqliteClient::SqliteClient(QObject *parent) :
     QObject(parent)
@@ -213,7 +214,7 @@ void SqliteClient::queryEvents()
 
 
     sqlite3_prepare_v2(db, "SELECT rowid, ip, op FROM ins;", -1, &ins_query, NULL);
-    sqlite3_prepare_v2(db, "SELECT rowid, ins_id, type, addr, size FROM mem;", -1, &mem_query, NULL);
+    sqlite3_prepare_v2(db, "SELECT rowid, ins_id, type, addr, size, value FROM mem;", -1, &mem_query, NULL);
     sqlite3_step(mem_query);
 
     while(sqlite3_step(ins_query) == SQLITE_ROW)
@@ -239,6 +240,7 @@ void SqliteClient::queryEvents()
                 mem_ev.type = EVENT_UFO;
             mem_ev.address = strtoul((const char*) sqlite3_column_text(mem_query, 3), NULL, 16);
             mem_ev.size = sqlite3_column_int(mem_query, 4);
+            mem_ev.value = strtoul((const char*) sqlite3_column_text(mem_query, 5), NULL, 16);
             mem_ev.time = time;
 
             emit receivedEvent(mem_ev);

@@ -83,6 +83,8 @@ signals:
     void positionChange(unsigned long long view_address, unsigned long long view_time);
     void cursorPositionChange(unsigned long long view_address, unsigned long long view_time);
     void eventDescriptionQueried(Event ev);
+    void eventRangeQueried(unsigned long long a_start, unsigned long long a_end, unsigned long long t_start, unsigned long long t_end);
+    void receivedEventRange(const QString &description);
 
 public slots:
     void onEventReceived(Event ev);
@@ -112,6 +114,7 @@ private:
     unsigned long long displayAddressToRealAddress(unsigned long long address);
     Event findEventAt(const QPoint pos);
     void updateZoomFactors();
+    void describeRange(const QRect &rect);
 
 protected:
     void wheelEvent(QWheelEvent *event);

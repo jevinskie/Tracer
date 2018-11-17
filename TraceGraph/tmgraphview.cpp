@@ -23,6 +23,9 @@
 #include "tmgraphview.h"
 
 #include <iostream>
+#include <sstream>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 std::ostream& operator<<(std::ostream& os, const QRect& r) 
 { 
@@ -235,6 +238,55 @@ Event TMGraphView::findEventAt(QPoint pos)
     return ev;
 }
 
+
+void TMGraphView::describeRange(const QRect &rect) {
+    std::stringstream desc;
+    unsigned long long a_start = displayAddressToRealAddress(view_address + rect.topLeft().x()/address_zoom_factor);
+    unsigned long long t_start = (unsigned long long)(view_time + rect.topLeft().y()/time_zoom_factor);
+    unsigned long long a_end = displayAddressToRealAddress(view_address + rect.bottomRight().x()/address_zoom_factor);
+    unsigned long long t_end = (unsigned long long)(view_time + rect.bottomRight().y()/time_zoom_factor);
+    for(const auto &blk : blocks)
+    {
+        if(a_end < blk.address) {
+            break; // We are too far in memory space
+        } else if (a_start >= blk.address && a_end <= blk.address + blk.size) {
+            for (const auto &ev : blk.events) {
+                if (t_end < ev.time) {
+                    break; // We are too far in time
+                } else if ((ev.type == EVENT_R || ev.type == EVENT_W) &&
+                           t_start <= ev.time && t_end >= ev.time &&
+                           a_start <= ev.address && a_end >= ev.address) {
+                    if (ev.type == EVENT_W) {
+                        fmt::print(desc, "<font color=\"#a00000\">");
+                    } else {
+                        fmt::print(desc, "<font color=\"#00a000\">");
+                    }
+                    switch (ev.size) {
+                        case 1:
+                            fmt::print(desc, "{:02X}", ev.value);
+                            break;
+                        case 2:
+                            fmt::print(desc, "{:04X}", ev.value);
+                            break;
+                        case 4:
+                            fmt::print(desc, "{:08X}", ev.value);
+                            break;
+                        case 8:
+                            fmt::print(desc, "{:016X}", ev.value);
+                            break;
+                        default:
+                            assert(!"bad write size");
+                            break;
+                    }
+                    fmt::print(desc, "</font> ");
+                }
+            }
+        }
+    }
+    // std::cout << "desc: " << desc.str() << "\n";
+    emit receivedEventRange(fmt::format("Address: 0x{:x} - 0x{:x}<br>Time: {} - {}<br>Data: {}", a_start, a_end, t_start, t_end, desc.str()).data());
+}
+
 void TMGraphView::displayTrace()
 {
     QMetaObject::invokeMethod(sqlite_client, "queryEvents", Qt::QueuedConnection);
@@ -379,6 +431,8 @@ void TMGraphView::mouseMoveEvent(QMouseEvent * event)
 {
     if (event->modifiers().testFlag(Qt::ControlModifier) && event->buttons() == Qt::LeftButton) {
         rubberBand->setGeometry(QRect(rubberBand->geometry().topLeft(), event->pos()).normalized());
+        // emit eventRangeQueried(0, 0, 0, 0);
+        describeRange(rubberBand->geometry());
     }
     else if(event->buttons() & Qt::LeftButton)
     {

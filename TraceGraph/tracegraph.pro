@@ -29,7 +29,7 @@ HEADERS  += mainwindow.h \
 FORMS    += mainwindow.ui \
     metadatadialog.ui
 
-LIBS += -lsqlite3
+LIBS += -lsqlite3 -lfmt-libstdcxx
 
 target.path = /usr/bin
 INSTALLS += target

@@ -42,6 +42,7 @@ struct Event
     unsigned long long time;
     unsigned long long address;
     unsigned int size;
+    unsigned long long value;
     long long id;
     EVENT_TYPE type;
 };
