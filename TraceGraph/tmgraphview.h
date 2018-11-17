@@ -33,6 +33,7 @@
 #include <QColor>
 #include <QGuiApplication>
 #include <QDebug>
+#include <QRubberBand>
 #include <string.h>
 #include "sqliteclient.h"
 #include <math.h>
@@ -103,6 +104,7 @@ private:
     ZoomState zoom_state;
     TraceState trace_state;
     QPoint drag_last_pos, drag_start, zoom_start;
+    QRubberBand *rubberBand;
 
     void setColor(EVENT_TYPE type);
     void regionProcessing();

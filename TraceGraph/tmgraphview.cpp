@@ -22,6 +22,20 @@
 /* ===================================================================== */
 #include "tmgraphview.h"
 
+#include <iostream>
+
+std::ostream& operator<<(std::ostream& os, const QRect& r) 
+{ 
+    os << "x: " << r.x() << " y: " << r.y() << " w: " << r.width() << " h: " << r.height();
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const QPoint& p) 
+{ 
+    os << "x: " << p.x() << " y: " << p.y();
+    return os;
+}
+
 int min(const int a, const int b)
 {
     if(a < b)
@@ -67,6 +81,8 @@ TMGraphView::TMGraphView(QWidget *parent) :
     setFocusPolicy(Qt::StrongFocus);
     drag_last_pos.setX(0);
     drag_last_pos.setY(0);
+    rubberBand = new QRubberBand(QRubberBand::Rectangle, this);
+    rubberBand->hide();
 }
 
 QSize TMGraphView::sizeHint() const
@@ -359,10 +375,23 @@ void TMGraphView::keyPressEvent(QKeyEvent * event)
     }
 }
 
-
 void TMGraphView::mouseMoveEvent(QMouseEvent * event)
 {
-    if(event->buttons() & Qt::LeftButton)
+    if (event->modifiers().testFlag(Qt::ControlModifier) && event->buttons() == Qt::LeftButton) {
+        // std::cout << "ctrl click move\n";
+        // std::cout << "rubberband event before rect: " << rubberBand->rect() << "\n";
+        // auto origin = event->pos();
+        // auto rbRect = QRect(rubberBand->geometry().topLeft(), event->pos());
+        // std::cout << "rubberband event after rect: " << rbRect << "\n";
+        // rbRect = rbRect.normalized();
+        // std::cout << "rubberband event after rect norm: " << rbRect << "\n";
+        rubberBand->setGeometry(QRect(rubberBand->geometry().topLeft(), event->pos()).normalized());
+        // std::cout << "rubberband event event pos: " << event->pos() << "\n";
+        // std::cout << "rubberband event rect: " << rubberBand->geometry() << "\n";
+        // update();
+        // return;
+    }
+    else if(event->buttons() & Qt::LeftButton)
     {
         addressMove((long)((drag_last_pos.x()-event->pos().x())/address_zoom_factor));
         drag_last_pos.setX(event->pos().x());
@@ -376,6 +405,20 @@ void TMGraphView::mouseMoveEvent(QMouseEvent * event)
 
 void TMGraphView::mousePressEvent(QMouseEvent * event)
 {
+    if (event->modifiers().testFlag(Qt::ControlModifier) && event->button() == Qt::LeftButton) {
+        std::cout << "ctrl click press\n";
+        auto origin = event->pos();
+        std::cout << "rubberband press origin point: " << origin << "\n";
+        std::cout << "rubberband press before rect: " << rubberBand->rect() << "\n";
+        auto rbRect = QRect(event->pos(), QSize());
+        std::cout << "rubberband press new rect: " << rbRect << "\n";
+        rubberBand->setGeometry(QRect(event->pos(), QSize()));
+        rubberBand->show();
+        std::cout << "rubberband press event pos: " << event->pos() << "\n";
+        std::cout << "rubberband press rect: " << rubberBand->geometry() << "\n";
+        update();
+        return;
+    }
     if(event->button() == Qt::LeftButton)
     {
         drag_start.setX(event->pos().x());
@@ -396,6 +439,13 @@ void TMGraphView::mousePressEvent(QMouseEvent * event)
 
 void TMGraphView::mouseReleaseEvent(QMouseEvent * event)
 {
+    if (event->modifiers().testFlag(Qt::ControlModifier) && event->button() == Qt::LeftButton) {
+        std::cout << "ctrl click release\n";
+        std::cout << "rubberband release event pos: " << event->pos() << "\n";
+        std::cout << "rubberband release rect: " << rubberBand->rect() << "\n";
+        rubberBand->hide();
+        update();
+    }
     if(event->button() == Qt::LeftButton)
     {
         // User is trying to select an event
@@ -501,5 +551,12 @@ void TMGraphView::paintEvent(QPaintEvent* /*event*/)
         painter->drawText(this->width()/2, this->height()/2, "Processing database.");
     else if(trace_state == NO_DB)
         painter->drawText(this->width()/2, this->height()/2, "No database selected.");
+    /*if (rubberBand && !rubberBand->isHidden()) {
+        std::cout << "painting rubberband\n";
+        painter->setPen(QColor(255,128,0));
+        std::cout << "this rect: " << this->rect() << "\n";
+        std::cout << "rubberband rect: " << rubberBand->rect() << "\n";
+        painter->drawRect(rubberBand->rect());
+    }*/
     painter->end();
 }

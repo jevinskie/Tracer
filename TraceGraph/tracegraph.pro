@@ -11,6 +11,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = tracegraph
 TEMPLATE = app
 
+CONFIG += c++11
+QMAKE_CXXFLAGS += -stdlib=libstdc++
+QMAKE_LFLAGS += -stdlib=libstdc++
 
 SOURCES += main.cpp\
         mainwindow.cpp \
