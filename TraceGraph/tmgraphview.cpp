@@ -472,7 +472,7 @@ void TMGraphView::mousePressEvent(QMouseEvent * event)
 
 void TMGraphView::mouseReleaseEvent(QMouseEvent * event)
 {
-    if (event->modifiers().testFlag(Qt::ControlModifier) && event->button() == Qt::LeftButton) {
+    if (!rubberBand->isHidden()) {
         rubberBand->hide();
     }
     else if(event->button() == Qt::LeftButton)
