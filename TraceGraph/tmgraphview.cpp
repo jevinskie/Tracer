@@ -238,9 +238,24 @@ Event TMGraphView::findEventAt(QPoint pos)
     return ev;
 }
 
+static std::string asciify(const uint8_t *buf, size_t sz) {
+    std::string res = "";
+    for (size_t i = 0; i < sz; ++i) {
+        if (isprint(buf[i])) {
+            res += (char)buf[i];
+        } else {
+            res += " ";
+        }
+    }
+    return res;
+}
+
 
 void TMGraphView::describeRange(const QRect &rect) {
     std::stringstream desc;
+    std::stringstream ascii_desc;
+    size_t sz = 0;
+    size_t count = 0;
     unsigned long long a_start = displayAddressToRealAddress(view_address + rect.topLeft().x()/address_zoom_factor);
     unsigned long long t_start = (unsigned long long)(view_time + rect.topLeft().y()/time_zoom_factor);
     unsigned long long a_end = displayAddressToRealAddress(view_address + rect.bottomRight().x()/address_zoom_factor);
@@ -258,21 +273,31 @@ void TMGraphView::describeRange(const QRect &rect) {
                            a_start <= ev.address && a_end >= ev.address) {
                     if (ev.type == EVENT_W) {
                         fmt::print(desc, "<font color=\"#a00000\">");
+                        fmt::print(ascii_desc, "<font color=\"#a00000\">");
                     } else {
                         fmt::print(desc, "<font color=\"#00a000\">");
+                        fmt::print(ascii_desc, "<font color=\"#00a000\">");
                     }
+                    auto ascii = asciify(reinterpret_cast<const uint8_t*>(&ev.value), ev.size);
+                    sz += ev.size;
+                    count += 1;
+                    fmt::print(ascii_desc, "{}", ascii);
                     switch (ev.size) {
                         case 1:
                             fmt::print(desc, "{:02X}", ev.value);
+                            // fmt::print(ascii_desc, "{:s}", ascii);
                             break;
                         case 2:
                             fmt::print(desc, "{:04X}", ev.value);
+                            // fmt::print(ascii_desc, "{:c}{:c}", (char)(ev.value >> 0), (char)(ev.value >> 8));
                             break;
                         case 4:
                             fmt::print(desc, "{:08X}", ev.value);
+                            // fmt::print(ascii_desc, "{:c}{:c}{:c}{:c}", (char)(ev.value >> 0), (char)(ev.value >> 8), (char)(ev.value >> 16), (char)(ev.value >> 24));
                             break;
                         case 8:
                             fmt::print(desc, "{:016X}", ev.value);
+                            // fmt::print(ascii_desc, "{:c}{:c}{:c}{:c}{:c}{:c}{:c}{:c}", (char)(ev.value >> 0), (char)(ev.value >> 8), (char)(ev.value >> 16), (char)(ev.value >> 24), (char)(ev.value >> 32), (char)(ev.value >> 40), (char)(ev.value >> 48), (char)(ev.value >> 56));
                             break;
                         default:
                             assert(!"bad write size");
@@ -284,7 +309,7 @@ void TMGraphView::describeRange(const QRect &rect) {
         }
     }
     // std::cout << "desc: " << desc.str() << "\n";
-    emit receivedEventRange(fmt::format("Address: 0x{:x} - 0x{:x}<br>Time: {} - {}<br>Data: {}", a_start, a_end, t_start, t_end, desc.str()).data());
+    emit receivedEventRange(fmt::format("Address: 0x{:x} - 0x{:x}<br>Time: {} - {}<br>Size: {}<br>Count: {}<br>Data: {}<br>ASCII Data: {}", a_start, a_end, t_start, t_end, sz, count, desc.str(), ascii_desc.str()).data());
 }
 
 void TMGraphView::displayTrace()
