@@ -1,3 +1,9 @@
 Makefile
+.qmake.stash
 tracegraph
+tracegraph.app
+tracegraph.exe
+moc_*.cpp
+moc_*.h
+ui_*.h
 *.o

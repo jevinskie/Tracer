@@ -112,8 +112,8 @@ void MainWindow::on_graph_time_editingFinished()
 
 void MainWindow::on_actionSave_Image_triggered()
 {
-    QString filename = QFileDialog::getSaveFileName(this, "Save graph as image");
-    if(filename != NULL) {
+    QString filename = QFileDialog::getSaveFileName(this, "Save graph as image", "", "Images (*.png *.jpeg *.jpg *.bmp *.tiff)");
+    if (!filename.isEmpty()) {
         QPixmap image = ui->graph->grab();
         image.save(filename);
     }
@@ -126,8 +126,9 @@ void MainWindow::on_actionOverview_zoom_triggered()
 
 void MainWindow::on_actionOpenDatabase_triggered()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Open database");
-    if(filename != NULL) {
+    QString filename = QFileDialog::getOpenFileName(this, "Open database", "", "SQLite DB (*.sqlite)");
+
+    if (!filename.isEmpty()) {
         QMetaObject::invokeMethod(&sqlite_client, "connectToDatabase", Qt::QueuedConnection, Q_ARG(QString, filename));
     }
 }
